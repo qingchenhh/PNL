@@ -108,6 +108,8 @@ def handle_log():
     os.remove(re400_path)
     os.remove(re404_path)
     os.remove(re403_path)
+    if os.path.isfile(excode_path):
+        os.remove(excode_path)
     # print(re_normal_data)
     print(Fore.GREEN+'[+] 文件处理完毕,处理完成的文件为：', re_normal_data+'\n')
     return re_normal_data
