@@ -30,6 +30,12 @@
 
 # 工具使用
 
+使用前先安装argparse模块和colorama模块。
+```
+pip install argparse
+pip install colorama
+```
+
 使用方法：
 
 ```
