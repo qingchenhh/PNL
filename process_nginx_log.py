@@ -12,18 +12,17 @@ def print_banner():
     |_|   |_| \_|_____|
     '''
     print(Style.BRIGHT + Fore.MAGENTA+str)
-    print('PNL Nginx攻击日志过滤工具 v0.3 --by 清晨\n')
+    print('PNL Nginx攻击日志过滤工具 v0.4 --by 清晨\n')
 
 def args():
     parser = argparse.ArgumentParser()
     parser.add_argument('-f','--file',dest="filename",required=True, type=str,help="Please input the file name of nginx (e.g. -f \"/var/log/access.log\")")
-    parser.add_argument('-p', '--print', dest="print", default='no', type=str,help="Simple attack feature matching and printing (e.g. -e yes)")
     parser.add_argument('-e', '--excode', dest="excode", default='', type=str,
                         help="Specifies the excluded HTTP status code. (e.g. -e 500)")
     return parser.parse_args()
 
 def removecode(filename,status_code,tmpname):
-    res_path = os.path.dirname(filename) + os.sep + tmpname
+    res_path = os.path.dirname(os.path.abspath(filename)) + os.sep + tmpname
     re_str = '" {} \d+ "'.format(status_code)
     with open(filename,mode='r',encoding='utf8') as f:
         with open(res_path,mode='w',encoding='utf8') as res_f:
@@ -33,7 +32,7 @@ def removecode(filename,status_code,tmpname):
     return res_path
 
 def re_normal_request(filename):
-    res_path = os.path.dirname(filename) + os.sep + "reslog.log"
+    res_path = os.path.dirname(os.path.abspath(filename)) + os.sep + "reslog.log"
 
     with open(filename, mode='r', encoding='utf8') as f:
         with open(res_path, mode='w', encoding='utf8') as res_f:
@@ -55,19 +54,6 @@ def ext_feat(filename,ext_str):
                 print(Style.BRIGHT + Fore.GREEN+'[+]'+i)
                 flags = True
     return flags
-
-def print_feature(re_normal_data,ext):
-    if not (ext == "yes"):
-        return False
-    print(Style.BRIGHT + Fore.YELLOW + '=' * 20 + "简单的攻击日志特征匹配并打印" + '=' * 20 + '\n')
-    print(Style.BRIGHT + Fore.YELLOW+'[*] 正在尝试根据UA匹配sqlmap的攻击特征。\n')
-    flags_sqlmap = ext_feat(re_normal_data, 'sqlmap.org')
-    if not flags_sqlmap:
-        print(Style.BRIGHT + Fore.RED+'[-] 没有匹配到sqlmap攻击日志。\n')
-    print(Style.BRIGHT + Fore.YELLOW+'[*] 正在尝试根据UA匹配蚁剑的攻击特征。\n')
-    flags_antsword = ext_feat(re_normal_data, 'AntSword')
-    if not flags_antsword:
-        print(Style.BRIGHT + Fore.RED+'[-] 没有匹配到AntSword攻击日志。\n')
 
 def excode():
     if args.excode != '':
@@ -93,9 +79,12 @@ def handle_log():
     # 去掉400
     print(Style.BRIGHT + Fore.YELLOW+'[*] 正在去除HTTP响应状态码为400的日志。\n')
     re400_path = removecode(re500_path, '400', 'tmp_log_400')
+    # 去掉405
+    print(Style.BRIGHT + Fore.YELLOW + '[*] 正在去除HTTP响应状态码为405的日志。\n')
+    re405_path = removecode(re400_path, '405', 'tmp_log_405')
     # 去掉404
     print(Style.BRIGHT + Fore.YELLOW+'[*] 正在去除HTTP响应状态码为404的日志。\n')
-    re404_path = removecode(re400_path, '404', 'tmp_log_404')
+    re404_path = removecode(re405_path, '404', 'tmp_log_404')
     # 去掉403
     print(Style.BRIGHT + Fore.YELLOW+'[*] 正在去除HTTP响应状态码为403的日志。\n')
     re403_path = removecode(re404_path, '403', 'tmp_log_403')
@@ -106,6 +95,7 @@ def handle_log():
     # 删除处理过程产生的临时文件
     os.remove(re500_path)
     os.remove(re400_path)
+    os.remove(re405_path)
     os.remove(re404_path)
     os.remove(re403_path)
     if os.path.isfile(excode_path) and (excode_path != args.filename):
@@ -127,7 +117,5 @@ if __name__ == '__main__':
         exit()
     # 处理日志
     ret_log = handle_log()
-    # 打印匹配到的攻击日志
-    print_feature(ret_log,args.print)
 
 
